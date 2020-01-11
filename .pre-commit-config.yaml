@@ -1,0 +1,22 @@
+repos:
+  - repo: local
+    hooks:
+      - id: unittests
+        name: unittests
+        entry: bash bin/run-unittests.sh
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: requirements
+        name: requirements
+        entry: bash bin/freeze-requirements.sh
+        language: system
+        always_run: true
+        pass_filenames: false
+  - repo: https://github.com/psf/black
+    rev: 19.3b0
+    hooks:
+      - id: black
+
+default_language_version:
+  python: python3.7
