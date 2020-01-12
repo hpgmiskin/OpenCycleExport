@@ -24,6 +24,10 @@ OpenCycleExport uses a number of sub modules for downloading, processing and exp
 
 Query the OverpassAPI using [Overpass API python wrapper](https://github.com/mvexel/overpass-api-python-wrapper) to download and cache the ways contained within a cycle route relation.
 
+### Route Processor
+
+Process a route to compute a ordered list of points which are the best means to travel between two locations.
+
 ### Shapely Utilities
 
 Utility functions to augment the [Shapely](https://github.com/Toblerity/Shapely) library. This allows a collection of LineStrings which make up a cycle route to be processed. LineStrings can be split where other routes join them at a mid point.
