@@ -7,6 +7,8 @@ Waypoint - Index of point at start or end of a line
 
 from typing import List, Dict, Set
 
+import itertools
+
 Waypoint = int
 Waypoints = List[Waypoint]
 
@@ -77,7 +79,7 @@ def route_creator(
                 current_unconnected_distance + unconnected_distance,
             )
 
-        #
+        # List of directly connected waypoints
         directly_connected_waypoints = connected_waypoints[start_point]
 
         # All unvisited waypoints which are connected to the start point
@@ -87,35 +89,41 @@ def route_creator(
             if connected_waypoint not in visited_waypoints
         ]
 
-        unconnected_unvisited_waypoints = [
-            waypoint
-            for waypoint in waypoints
-            if (
-                (waypoint not in directly_connected_waypoints)
-                and (waypoint not in visited_waypoints)
-            )
+        # Compare distance from start point to end point with distance to start point
+        current_distance = waypoint_distances[start_point][end_point]
+        closer_connected_waypoints = [
+            next_waypoint
+            for next_waypoint in connected_unvisited_waypoints
+            if waypoint_distances[next_waypoint][end_point] < current_distance
         ]
 
-        closest_unconnected_unvisited_waypoints = [
-            unconnected_waypoint
-            for unconnected_waypoint in sorted(
-                unconnected_unvisited_waypoints, key=find_distance
+        # If there are directly connected waypoints we chose the route with least unconnected
+        if len(closer_connected_waypoints):
+            return min(
+                [
+                    find_route(next_waypoint)
+                    for next_waypoint in closer_connected_waypoints
+                ],
+                key=lambda result: result[1],
             )
-        ][:number_close_waypoint_search]
 
-        all_possible_routes = [
-            find_route(
-                next_waypoint,
-                0
-                if next_waypoint in directly_connected_waypoints
-                else find_distance(next_waypoint),
-            )
-            for next_waypoint in [
-                *connected_unvisited_waypoints,
-                *closest_unconnected_unvisited_waypoints,
-            ]
+        # If there are no connected and unvisited waypoints find all unvisited waypoints
+        unvisited_waypoints = [
+            waypoint for waypoint in waypoints if waypoint not in visited_waypoints
         ]
 
-        return min(all_possible_routes, key=lambda result: result[1])
+        # Create list of a couple of closest unvisited waypoint
+        closest_unvisited_waypoints = itertools.islice(
+            sorted(unvisited_waypoints, key=find_distance), number_close_waypoint_search
+        )
+
+        # Select the route with the least
+        return min(
+            [
+                find_route(next_waypoint, find_distance(next_waypoint))
+                for next_waypoint in closest_unvisited_waypoints
+            ],
+            key=lambda result: result[1],
+        )
 
     return create_route
