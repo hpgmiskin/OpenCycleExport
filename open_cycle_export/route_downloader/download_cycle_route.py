@@ -1,3 +1,5 @@
+import json
+
 from open_cycle_export.route_downloader.query_overpass import query_overpass
 
 
@@ -25,4 +27,5 @@ def download_cycle_route_data(search_area, cycle_network, route_number):
 
 
 if __name__ == "__main__":
-    download_cycle_route_data("England", "ncn", 22)
+    cycle_route_data = download_cycle_route_data("England", "ncn", 22)
+    print(json.dumps(cycle_route_data, indent=4))
