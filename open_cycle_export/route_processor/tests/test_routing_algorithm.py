@@ -3,7 +3,7 @@ from typing import Tuple, List, Set
 import math
 import unittest
 
-from open_cycle_export.route_processor.route_creator import (
+from open_cycle_export.route_processor.routing_algorithm import (
     Waypoint,
     Waypoints,
     CostMatrix,

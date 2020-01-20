@@ -37,14 +37,21 @@ def filter_contained_points(line: LineString, points: List[Point]) -> List[Point
 
 def split_line_at_points(line: LineString, points: List[Point]):
     "Reccursively split the line at all the break points"
+
     contained_points = filter_contained_points(line, points)
     if len(contained_points) < 1:
         return [line]
     else:
         split_lines = []
         break_point = contained_points[0]
-        for line_segment in shapely.ops.split(line, break_point):
-            split_lines.extend(split_line_at_points(line_segment, points))
+        try:
+            for line_segment in shapely.ops.split(line, break_point):
+                split_lines.extend(split_line_at_points(line_segment, points))
+        except ValueError as split_error:
+            # print(line)
+            # print(break_point)
+            # print(split_error)
+            split_lines.append(line)
         return split_lines
 
 
