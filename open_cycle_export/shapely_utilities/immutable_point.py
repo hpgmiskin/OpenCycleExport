@@ -15,3 +15,6 @@ class ImmutablePoint(shapely.geometry.Point):
 
     def __hash__(self):
         return hash(tuple(self.coords))
+
+    def __repr__(self):
+        return "({}, {})".format(self.x, self.y)

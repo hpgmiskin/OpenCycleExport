@@ -19,6 +19,9 @@ Waypoints = List[ImmutablePoint]
 WaypointConnections = List[List[LineString]]
 CostsMatrix = List[List[float]]
 
+StoreWaypointConnection = Callable[[ImmutablePoint, ImmutablePoint, int], None]
+RetrieveWaypointConnections = Callable[[ImmutablePoint, ImmutablePoint], List[int]]
+
 
 def find_intersecting_lines(lines: List[LineString]) -> List[List[LineString]]:
     return [
@@ -68,7 +71,14 @@ def get_line_endpoints(line: LineString) -> ImmutablePoint:
     return (ImmutablePoint(*line.coords[0]), ImmutablePoint(*line.coords[-1]))
 
 
-def waypoint_connection_storage():
+def waypoint_connection_storage() -> Tuple[
+    StoreWaypointConnection, RetrieveWaypointConnections
+]:
+    """Store and retrieve waypoint connections
+    
+    Returns:
+        Tuple[StoreWaypointConnection, RetrieveWaypointConnections] -- Functions to store and retrieve waypoint connections
+    """
 
     storage = {}
 
@@ -82,6 +92,62 @@ def waypoint_connection_storage():
         return storage.get(point_pair, [])
 
     return store, load
+
+
+def create_line_segments(ways: List[LineString]) -> Tuple[List[LineString], List[int]]:
+    """Split ways into smallest line segments
+    
+    Arguments:
+        ways {List[LineString]} -- Ways included in a route
+    
+    Returns:
+        Tuple[List[LineString], List[int]] -- Smaller line segments and association between line segments and ways
+    """
+
+    line_segments = []
+    line_segments_way_lookup = []
+    ways_intersecting_ways = find_intersecting_lines(ways)
+
+    # Split all ways into line segments where other ways intersect
+    for way_index in range(len(ways)):
+        way = ways[way_index]
+        intersecting_ways = ways_intersecting_ways[way_index]
+        way_line_segments = split_line_by_intersecting_lines(way, intersecting_ways)
+        for way_line_segment in way_line_segments:
+            line_segments.append(way_line_segment)
+            line_segments_way_lookup.append(way_index)
+
+    return line_segments, line_segments_way_lookup
+
+
+def create_waypoints(
+    line_segments: List[LineString],
+) -> Tuple[List[ImmutablePoint], RetrieveWaypointConnections]:
+    """Create a list of unique waypoints
+    
+    Arguments:
+        line_segments {List[LineString]} -- Line segments between every desired waypoint
+    
+    Returns:
+        Tuple[List[ImmutablePoint], RetrieveWaypointConnections] -- List of waypoints and function to get waypoint connections
+    """
+
+    waypoints = dict()
+    store_connection, retrieve_connections = waypoint_connection_storage()
+
+    def add_waypoint(waypoint, order):
+        waypoints[waypoint] = waypoints.get(waypoint, order)
+
+    def get_order(waypoint):
+        return waypoints[waypoint]
+
+    for line_index, line_segment in enumerate(line_segments):
+        start_waypoint, end_waypoint = get_line_endpoints(line_segment)
+        add_waypoint(start_waypoint, line_index)
+        add_waypoint(end_waypoint, line_index + 0.5)
+        store_connection(start_waypoint, end_waypoint, line_index)
+
+    return sorted(list(waypoints.keys()), key=get_order), retrieve_connections
 
 
 def process_ways(
@@ -102,18 +168,7 @@ def process_ways(
         Tuple[Waypoints, WaypointConnections, CostsMatrix] -- waypoints, waypoint_connections, cost_matrix
     """
 
-    line_segments = []
-    line_segments_way_lookup = []
-    ways_intersecting_ways = find_intersecting_lines(ways)
-
-    # Split all ways into line segments where other ways intersect
-    for way_index in range(len(ways)):
-        way = ways[way_index]
-        intersecting_ways = ways_intersecting_ways[way_index]
-        way_line_segments = split_line_by_intersecting_lines(way, intersecting_ways)
-        for way_line_segment in way_line_segments:
-            line_segments.append(way_line_segment)
-            line_segments_way_lookup.append(way_index)
+    line_segments, line_segments_way_lookup = create_line_segments(ways)
 
     def create_segment_costs(coefficients):
         return [
@@ -124,16 +179,8 @@ def process_ways(
     line_forward_costs = create_segment_costs(forward_coefficients)
     line_reverse_costs = create_segment_costs(reverse_coefficients)
 
-    waypoints_set = set()
-    store_connection, retrieve_connections = waypoint_connection_storage()
+    waypoints, retrieve_connections = create_waypoints(line_segments)
 
-    for line_index, line_segment in enumerate(line_segments):
-        start_waypoint, end_waypoint = get_line_endpoints(line_segment)
-        store_connection(start_waypoint, end_waypoint, line_index)
-        waypoints_set.add(start_waypoint)
-        waypoints_set.add(end_waypoint)
-
-    waypoints: Waypoints = list(waypoints_set)
     waypoint_connections: WaypointConnections = []
     costs_matrix: CostsMatrix = []
 
@@ -149,27 +196,42 @@ def process_ways(
 
         for j, point_b in enumerate(waypoints):
 
-            waypoint_connections[i].append(None)
-            costs_matrix[i].append(point_a.distance(point_b))
+            forward_connections = retrieve_connections(point_a, point_b)
+            reverse_connections = retrieve_connections(point_b, point_a)
 
-            forward_connection_indexes = retrieve_connections(point_a, point_b)
-            reverse_connection_indexes = retrieve_connections(point_b, point_a)
-
-            connection_costs = [
-                *get_costs_from_indexes(line_forward_costs, forward_connection_indexes),
-                *get_costs_from_indexes(line_reverse_costs, reverse_connection_indexes),
+            connections = [
+                *[(index, "forward") for index in forward_connections],
+                *[(index, "reverse") for index in reverse_connections],
             ]
 
-            if len(connection_costs):
+            def get_connection_cost(connection):
+                connection_index, direction = connection
+                if direction == "forward":
+                    return line_forward_costs[connection_index]
+                elif direction == "reverse":
+                    return line_reverse_costs[connection_index]
+                else:
+                    raise RuntimeError("Should be forward or reverse")
 
-                min_connection_cost = min(connection_costs)
-                costs_matrix[i][j] = min_connection_cost
+            if len(connections):
 
-                min_connection_index = connection_costs.index(min_connection_cost)
-                is_forward = min_connection_index < len(forward_connection_indexes)
-                line_segment = line_segments[min_connection_index]
-                waypoint_connections[i][j] = (
-                    line_segment if is_forward else reverse_line_string(line_segment)
+                connection_index, direction = min(connections, key=get_connection_cost)
+                line_segment = line_segments[connection_index]
+                waypoint_connections[i].append(
+                    line_segment
+                    if direction == "forward"
+                    else reverse_line_string(line_segment)
                 )
+
+                cost = get_connection_cost((connection_index, direction))
+                costs_matrix[i].append(cost)
+
+            else:
+
+                waypoint_connections[i].append(None)
+
+                euclidean_distance = point_a.distance(point_b)
+                unconnected_cost = euclidean_distance * unconnected_coefficient
+                costs_matrix[i].append(unconnected_cost)
 
     return waypoints, waypoint_connections, costs_matrix
