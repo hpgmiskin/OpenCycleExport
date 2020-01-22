@@ -111,9 +111,18 @@ class TestWayProcessor(unittest.TestCase):
         ]
 
         self.assertListEqual(waypoints, expected_waypoints)
-        self.assertIsNone(waypoint_connections[0][2])
-        self.assertIsNone(waypoint_connections[2][0])
-        self.assertEqual(waypoint_connections[0][1], ways[0])
-        self.assertEqual(waypoint_connections[1][2], ways[1])
-        self.assertEqual(waypoint_connections[1][0], LineString([(3, 0), (0, 0)]))
-        self.assertEqual(waypoint_connections[2][1], LineString([(3, 4), (3, 0)]))
+
+        _way_0 =LineString([(3, 0), (0, 0)])
+        _way_1 = LineString([(3, 4), (3, 0)])
+
+        self.assertListEqual(waypoint_connections, [
+            [None, ways[0], None],
+            [_way_0, None, ways[1]],
+            [None, _way_1, None],
+        ])
+
+        self.assertListEqual(cost_matrix,[
+            [0,3,5000],
+            [3,0,4],
+            [5000,4,0]
+        ])
