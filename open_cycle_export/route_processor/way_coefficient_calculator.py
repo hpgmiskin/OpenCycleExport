@@ -29,7 +29,9 @@ def create_way_coefficient_calculator(
         Callable[[Dict, str, str], int] -- Function to find the 
     """
 
-    def calculate_way_coefficient(properties: Dict, vehicle: str, direction="") -> int:
+    def calculate_way_coefficient(
+        properties: Dict, vehicle: str, direction="forward"
+    ) -> int:
         """Check if a route is navigable by a given vehicle type 
 
         If the route is navigable return a positive number

@@ -42,7 +42,7 @@ def create_route(
     ]
 
     reverse_coefficients = [
-        calculate_way_coefficient(feature["properties"], "bicycle", "forward")
+        calculate_way_coefficient(feature["properties"], "bicycle", "reverse")
         for feature in features
     ]
 

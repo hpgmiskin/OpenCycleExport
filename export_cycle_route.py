@@ -9,13 +9,18 @@ import shapely.ops
 import shapely.geometry
 
 from shapely.geometry import Point, LineString, MultiLineString, Polygon
+from shapely.geometry.base import BaseGeometry
 
 from open_cycle_export.map_builder.map_plotter import MapPlotter
 from open_cycle_export.route_downloader.download_cycle_route import download_cycle_route
 from open_cycle_export.route_processor.route_processor import create_route
 from open_cycle_export.shapely_utilities.immutable_point import ImmutablePoint
 
+FILTER_FEATURES = False
+
 logger = logging.getLogger(__name__)
+
+get_geometry = operator.itemgetter("geometry")
 
 
 def get_file_path(name: str, extension: str = "json"):
@@ -39,34 +44,39 @@ def create_bbox_polygon(min_x, min_y, max_x, max_y):
     return Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
 
 
-def filter_features(
-    features: List[Dict], bounding_box: Tuple[float, float, float, float]
-):
-    bbox_polygon = create_bbox_polygon(*bounding_box)
+def filter_features(features: List[Dict], polygon: Polygon):
     return [
         feature
         for feature in features
-        if shapely.geometry.shape(feature["geometry"]).intersects(bbox_polygon)
+        if shapely.geometry.shape(get_geometry(feature)).intersects(polygon)
     ]
 
 
 IOW_BBOX = [-1.599259, 50.560611, -1.051316, 50.778640]
 SMALL_BBOX = [-1.599259, 50.560611, -1.299863, 50.701102]
 TINY_BBOX = [-1.599259, 50.560611, -1.31873, 50.696457]
+PETERSFIELD_ROUNDABOUT = [
+    (-0.9434456, 50.9970774),
+    (-0.9435448, 50.9966503),
+    (-0.9427268, 50.9966385),
+    (-0.9427429, 50.9970774),
+    (-0.9434456, 50.9970774),
+]
 
 
 def main(recompute=True):
-
-    map_plotter = MapPlotter()
 
     route_area, route_type, route_number = "United Kingdom", "ncn", 22
     route_name = "uk_{}_{}".format(route_type, route_number)
 
     features = download_cycle_route(route_area, route_type, route_number)["features"]
     logger.info("downloaded %s features", len(features))
-    # features = filter_features(features, IOW_BBOX)
 
-    get_geometry = operator.itemgetter("geometry")
+    if FILTER_FEATURES:
+        features = filter_features(features, create_bbox_polygon(*IOW_BBOX))
+        features = filter_features(features, Polygon(PETERSFIELD_ROUNDABOUT))
+        print(json.dumps(features, indent=4))
+
     line_strings = list(map(shapely.geometry.shape, map(get_geometry, features)))
     original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
     ways_multi_line_string = shapely.ops.linemerge(line_strings)
@@ -93,6 +103,7 @@ def main(recompute=True):
     else:
         route_multi_line_string = load_route(route_name)
 
+    map_plotter = MapPlotter()
     map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
     map_plotter.plot_multi_line_string("Route", route_multi_line_string)
     map_plotter.plot_waypoints("Waypoints", original_waypoints)

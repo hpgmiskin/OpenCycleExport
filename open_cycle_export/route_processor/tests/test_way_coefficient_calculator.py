@@ -28,7 +28,7 @@ class TestRouteNavigation(unittest.TestCase):
 
     def test_bicycle_designated(self):
         properties = {"bicycle": "designated"}
-        result = self.calculate_way_coefficient(properties, "bicycle")
+        result = self.calculate_way_coefficient(properties, "bicycle", "forward")
         self.assertEqual(result, "cycle_only")
 
     def test_bicycle_designated_oneway(self):
@@ -38,10 +38,28 @@ class TestRouteNavigation(unittest.TestCase):
 
     def test_bicycle_permitted(self):
         properties = {"bicycle": "permitted"}
-        result = self.calculate_way_coefficient(properties, "bicycle")
+        result = self.calculate_way_coefficient(properties, "bicycle", "forward")
         self.assertEqual(result, "cycle_permitted")
 
     def test_bicycle_specified(self):
         properties = {"bicycle": "yes"}
-        result = self.calculate_way_coefficient(properties, "bicycle")
+        result = self.calculate_way_coefficient(properties, "bicycle", "forward")
         self.assertEqual(result, "cycle_only")
+
+    def test_real_roundabout_example(self):
+        properties = {
+            "access": "yes",
+            "carriageway": "single",
+            "highway": "secondary",
+            "junction": "roundabout",
+            "maxspeed": "30 mph",
+            "maxspeed:type": "GB:limit",
+            "oneway": "yes",
+            "ref": "B2070",
+        }
+        # Should be passible road forwards
+        result = self.calculate_way_coefficient(properties, "bicycle", "forward")
+        self.assertEqual(result, "passible_road")
+        # Should be impassible when in reverse
+        result = self.calculate_way_coefficient(properties, "bicycle", "reverse")
+        self.assertEqual(result, "impassible")

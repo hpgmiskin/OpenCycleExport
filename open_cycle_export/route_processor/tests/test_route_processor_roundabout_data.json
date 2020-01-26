@@ -1,0 +1,158 @@
+[
+    {
+        "type": "Feature",
+        "id": 4974428,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    -0.942975,
+                    50.996905
+                ],
+                [
+                    -0.942682,
+                    50.996912
+                ]
+            ]
+        },
+        "properties": {
+            "carriageway": "single",
+            "cycleway": "lane",
+            "highway": "secondary",
+            "lanes": "2",
+            "maxspeed": "30 mph",
+            "maxspeed:type": "GB:limit",
+            "name": "The Causeway",
+            "old_ref": "A3",
+            "oneway": "no",
+            "ref": "B2070",
+            "sidewalk": "both",
+            "source": "survey",
+            "surface": "asphalt"
+        }
+    },
+    {
+        "type": "Feature",
+        "id": 4974429,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    -0.943126,
+                    50.996774
+                ],
+                [
+                    -0.943204,
+                    50.996781
+                ],
+                [
+                    -0.943253,
+                    50.996801
+                ],
+                [
+                    -0.943289,
+                    50.996832
+                ],
+                [
+                    -0.943306,
+                    50.996867
+                ],
+                [
+                    -0.943301,
+                    50.996907
+                ],
+                [
+                    -0.943276,
+                    50.99694
+                ],
+                [
+                    -0.943235,
+                    50.996966
+                ],
+                [
+                    -0.943203,
+                    50.996977
+                ],
+                [
+                    -0.943146,
+                    50.996985
+                ],
+                [
+                    -0.943088,
+                    50.99698
+                ],
+                [
+                    -0.94304,
+                    50.996965
+                ],
+                [
+                    -0.942999,
+                    50.996939
+                ],
+                [
+                    -0.942975,
+                    50.996905
+                ],
+                [
+                    -0.942972,
+                    50.996866
+                ],
+                [
+                    -0.942989,
+                    50.996831
+                ],
+                [
+                    -0.943021,
+                    50.996803
+                ],
+                [
+                    -0.94307,
+                    50.996783
+                ],
+                [
+                    -0.943126,
+                    50.996774
+                ]
+            ]
+        },
+        "properties": {
+            "access": "yes",
+            "carriageway": "single",
+            "highway": "secondary",
+            "junction": "roundabout",
+            "maxspeed": "30 mph",
+            "maxspeed:type": "GB:limit",
+            "oneway": "yes",
+            "ref": "B2070"
+        }
+    },
+    {
+        "type": "Feature",
+        "id": 134664512,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [
+                    -0.943355,
+                    50.996674
+                ],
+                [
+                    -0.943253,
+                    50.996801
+                ]
+            ]
+        },
+        "properties": {
+            "access": "yes",
+            "carriageway": "single",
+            "highway": "secondary",
+            "maxspeed": "30 mph",
+            "maxspeed:type": "GB:limit",
+            "name": "The Causeway",
+            "old_ref": "A3",
+            "oneway": "no",
+            "ref": "B2070",
+            "source": "survey"
+        }
+    }
+]
