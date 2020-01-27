@@ -31,8 +31,27 @@ class TestLineStringSplitter(unittest.TestCase):
         self.assertListEqual(list(line_segments[1].coords), [(1, 1), (2, 2)])
         self.assertListEqual(list(line_segments[2].coords), [(2, 2), (3, 3)])
 
-    def test_real_example_split_linestring(self):
-        real_example_data = load_test_data("test_line_string_splitter_data.json")
+    def test_split_double_when_coincided(self):
+        line = LineString([(0, 0), (1, 1), (2, 2), (3, 3)])
+        intersecting_lines = [LineString([(1, 0), (1, 1), (2, 2), (2, 3)])]
+        line_segments = split_line_by_intersecting_lines(line, intersecting_lines)
+        self.assertEqual(len(line_segments), 3)
+        self.assertListEqual(list(line_segments[0].coords), [(0, 0), (1, 1)])
+        self.assertListEqual(list(line_segments[1].coords), [(1, 1), (2, 2)])
+        self.assertListEqual(list(line_segments[2].coords), [(2, 2), (3, 3)])
+
+    def test_real_example_split_linestring_overlap(self):
+        filename = "test_line_string_splitter_overlap_data.json"
+        real_example_data = load_test_data(filename)
+        line = shapely.geometry.shape(real_example_data["line"])
+        intersecting_lines = real_example_data["intersecting_lines"]
+        intersecting_lines = list(map(shapely.geometry.shape, intersecting_lines))
+        line_segments = split_line_by_intersecting_lines(line, intersecting_lines)
+        self.assertGreater(len(line_segments), 3)
+
+    def test_real_example_split_linestring_recursion(self):
+        filename = "test_line_string_splitter_recursion_data.json"
+        real_example_data = load_test_data(filename)
         line = shapely.geometry.shape(real_example_data["line"])
         intersecting_lines = real_example_data["intersecting_lines"]
         intersecting_lines = list(map(shapely.geometry.shape, intersecting_lines))
