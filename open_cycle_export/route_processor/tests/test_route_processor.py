@@ -3,17 +3,10 @@ import unittest
 import json
 import os.path
 
+
 from open_cycle_export.route_processor.route_processor import create_route
 from open_cycle_export.shapely_utilities.immutable_point import ImmutablePoint
-
-
-def get_data_path(filename):
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), filename)
-
-
-def load_test_data(filename):
-    with open(get_data_path(filename)) as test_data_file:
-        return json.load(test_data_file)
+from open_cycle_export.test_data.test_data_loader import load_test_data
 
 
 class TestRouteProcessor(unittest.TestCase):
