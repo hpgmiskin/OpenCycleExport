@@ -21,7 +21,7 @@ from open_cycle_export.shapely_utilities.line_string_splitter import (
 
 Waypoints = List[ImmutablePoint]
 WaypointConnections = List[List[LineString]]
-CostsMatrix = List[List[float]]
+Matrix = List[List[float]]
 
 StoreWaypointConnection = Callable[[ImmutablePoint, ImmutablePoint, int], None]
 RetrieveWaypointConnections = Callable[[ImmutablePoint, ImmutablePoint], List[int]]
@@ -121,12 +121,16 @@ def create_waypoints(
     return sorted(list(waypoints.keys()), key=get_order), retrieve_connections
 
 
+def make_matrix(shape: Tuple[int, int], fill=None):
+    return [[fill for j in range(shape[1])] for i in range(shape[0])]
+
+
 def process_ways(
     ways: List[LineString],
     forward_coefficients: List[float],
     reverse_coefficients: List[float],
     unconnected_coefficient: float,
-) -> Tuple[Waypoints, WaypointConnections, CostsMatrix]:
+) -> Tuple[Waypoints, WaypointConnections, Matrix, Matrix]:
     """Process ways to be used in route creation
     
     Arguments:
@@ -136,7 +140,7 @@ def process_ways(
         unconnected_coefficient {float} -- Coefficient to apply to straight line distance when no way exists between waypoints
     
     Returns:
-        Tuple[Waypoints, WaypointConnections, CostsMatrix] -- waypoints, waypoint_connections, cost_matrix
+        Tuple[Waypoints, Matrix, WaypointConnections, Matrix] -- waypoints, waypoint_distances, waypoint_connections, cost_matrix
     """
 
     line_segments, line_segments_way_lookup = create_line_segments(ways)
@@ -151,21 +155,17 @@ def process_ways(
     line_reverse_costs = create_segment_costs(reverse_coefficients)
 
     waypoints, retrieve_connections = create_waypoints(line_segments)
+    matrix_shape = (len(waypoints), len(waypoints))
 
-    waypoint_connections: WaypointConnections = []
-    costs_matrix: CostsMatrix = []
-
-    def get_costs_from_indexes(directed_costs, connection_indexes):
-        return [
-            directed_costs[connection_index] for connection_index in connection_indexes
-        ]
+    waypoint_distances: Matrix = make_matrix(matrix_shape)
+    waypoint_connections: WaypointConnections = make_matrix(matrix_shape)
+    costs_matrix: Matrix = make_matrix(matrix_shape)
 
     for i, point_a in enumerate(waypoints):
 
-        waypoint_connections.append([])
-        costs_matrix.append([])
-
         for j, point_b in enumerate(waypoints):
+
+            waypoint_distances[i][j] = point_a.distance(point_b)
 
             forward_connections = retrieve_connections(point_a, point_b)
             reverse_connections = retrieve_connections(point_b, point_a)
@@ -187,22 +187,16 @@ def process_ways(
             if len(connections):
 
                 connection_index, direction = min(connections, key=get_connection_cost)
-                line_segment = line_segments[connection_index]
-                waypoint_connections[i].append(
-                    line_segment
-                    if direction == "forward"
-                    else reverse_line_string(line_segment)
-                )
-
-                cost = get_connection_cost((connection_index, direction))
-                costs_matrix[i].append(cost)
+                is_forward = direction == "forward"
+                line = line_segments[connection_index]
+                directed_line = line if is_forward else reverse_line_string(line)
+                waypoint_connections[i][j] = directed_line
+                costs_matrix[i][j] = get_connection_cost((connection_index, direction))
 
             else:
 
-                waypoint_connections[i].append(None)
-
-                euclidean_distance = point_a.distance(point_b)
+                euclidean_distance = waypoint_distances[i][j]
                 unconnected_cost = euclidean_distance * unconnected_coefficient
-                costs_matrix[i].append(unconnected_cost)
+                costs_matrix[i][j] = unconnected_cost
 
-    return waypoints, waypoint_connections, costs_matrix
+    return waypoints, waypoint_distances, waypoint_connections, costs_matrix

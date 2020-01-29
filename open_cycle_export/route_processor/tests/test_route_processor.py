@@ -4,9 +4,21 @@ import json
 import os.path
 
 
-from open_cycle_export.route_processor.route_processor import create_route
+from open_cycle_export.route_processor.route_processor import (
+    find_furthest_waypoints,
+    create_route,
+)
 from open_cycle_export.shapely_utilities.immutable_point import ImmutablePoint
 from open_cycle_export.test_data.test_data_loader import load_test_data
+
+
+class TestFurthestWaypointFinder(unittest.TestCase):
+    """Test finding the furthest waypoints"""
+
+    def test_simple_matrix(self):
+        waypoint_distances = [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
+        furthest_waypoints = find_furthest_waypoints(waypoint_distances)
+        self.assertTupleEqual(furthest_waypoints, (0, 2))
 
 
 class TestRouteProcessor(unittest.TestCase):
