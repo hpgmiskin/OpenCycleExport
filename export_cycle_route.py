@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple, Any
 
+import re
 import json
 import os.path
 import logging
@@ -13,9 +14,11 @@ from shapely.geometry.base import BaseGeometry
 
 from open_cycle_export.map_builder.map_plotter import MapPlotter
 from open_cycle_export.route_downloader.download_cycle_route import download_cycle_route
+from open_cycle_export.route_downloader.download_towns import download_towns
 from open_cycle_export.route_processor.route_processor import (
     process_route_features,
-    create_longest_route,
+    find_furthest_waypoints,
+    make_route_creator,
 )
 from open_cycle_export.shapely_utilities.immutable_point import ImmutablePoint
 from open_cycle_export.shapely_utilities.geometry_encoder import GeometryEncoder
@@ -101,21 +104,46 @@ def merge_line_strings(line_strings: List[LineString]):
     return MultiLineString([ways_multi_line_string])
 
 
+def format_name(name: str):
+    return re.sub(r"\s+", "", name).lower()
+
+
+def closest_town_index_finder(town_points: List[ImmutablePoint]):
+    town_indexes = list(range(len(town_points)))
+
+    def find_closest_town_index(search_point: ImmutablePoint):
+        return min(town_indexes, key=lambda i: search_point.distance(town_points[i]))
+
+    return find_closest_town_index
+
+
 def main(recompute=True):
 
-    route_area, route_type, route_number = "United Kingdom", "ncn", 22
-    route_name = "uk_{}_{}".format(route_type, route_number)
+    area, route_type, route_number = "England", "ncn", 13
+    route_name = "{}_{}_{}".format(format_name(area), route_type, route_number)
 
-    features = download_cycle_route(route_area, route_type, route_number)["features"]
-    logger.info("downloaded %s features", len(features))
+    route_features = download_cycle_route(area, route_type, route_number)["features"]
+    logger.info("downloaded %s route features", len(route_features))
 
-    # features = filter_features(features, create_bbox_polygon(*IOW_BBOX))
-    # features = filter_features(features, Polygon(PETERSFIELD_ROUNDABOUT))
-    # logger.warning("filtered features to %s entries", len(features))
-    # route_name = "{}_filter_{}".format(route_name, len(features))
-    # print(json.dumps(features, indent=4))
+    town_features = download_towns(area)["features"]
+    logger.info("downloaded %s town features", len(town_features))
 
-    line_strings = list(map(shapely.geometry.shape, map(get_geometry, features)))
+    # route_features = filter_features(route_features, create_bbox_polygon(*IOW_BBOX))
+    # route_features = filter_features(route_features, Polygon(PETERSFIELD_ROUNDABOUT))
+    # logger.warning("filtered features to %s entries", len(route_features))
+    # route_name = "{}_filter_{}".format(route_name, len(route_features))
+    # print(json.dumps(route_features, indent=4))
+
+    town_names = [
+        feature.get("properties", {}).get("name") for feature in town_features
+    ]
+    town_points = [
+        ImmutablePoint(*feature.get("geometry", {}).get("coordinates"))
+        for feature in town_features
+    ]
+    find_closest_town_index = closest_town_index_finder(town_points)
+
+    line_strings = list(map(shapely.geometry.shape, map(get_geometry, route_features)))
     original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
     ways_multi_line_string = merge_line_strings(line_strings)
 
@@ -144,27 +172,39 @@ def main(recompute=True):
         waypoint_distances = load_json(waypoint_distances_filename)
         waypoint_connections = load_waypoint_connections(waypoint_connections_filename)
         costs_matrix = load_json(costs_matrix_filename)
+        logger.info("using cached waypoints")
     except FileNotFoundError:
-        logger.info("Cache not loaded")
-        result = process_route_features(features)
+        logger.info("waypoint cache not found")
+        result = process_route_features(route_features)
         waypoints, waypoint_distances, waypoint_connections, costs_matrix = result
         store_geometry(waypoints, waypoints_filename)
         store_json(waypoint_distances, waypoint_distances_filename)
         store_geometry(waypoint_connections, waypoint_connections_filename)
         store_json(costs_matrix, costs_matrix_filename)
 
-    try:
-        route_multi_line_string = load_route(route_name)
-    except FileNotFoundError:
-        inputs = waypoints, waypoint_distances, waypoint_connections, costs_matrix
-        route_multi_line_string = create_longest_route(*inputs)
-        store_route(route_multi_line_string, route_name)
+    inputs = waypoints, waypoint_distances, waypoint_connections, costs_matrix
+    route_creator = make_route_creator(*inputs)
+
+    point_a_index, point_b_index = find_furthest_waypoints(waypoint_distances)
+
+    route_a_to_b = route_creator(point_a_index, point_b_index)
+    route_b_to_a = route_creator(point_b_index, point_a_index)
+
+    waypoint_a = waypoints[point_a_index]
+    waypoint_b = waypoints[point_b_index]
+
+    waypoint_a_town_name = town_names[find_closest_town_index(waypoint_a)]
+    waypoint_b_town_name = town_names[find_closest_town_index(waypoint_b)]
+
+    route_a_to_b_name = "{} to {}".format(waypoint_a_town_name, waypoint_b_town_name)
+    route_b_to_a_name = "{} to {}".format(waypoint_b_town_name, waypoint_a_town_name)
 
     map_plotter = MapPlotter()
     map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
-    map_plotter.plot_multi_line_string("Route", route_multi_line_string)
+    map_plotter.plot_multi_line_string(route_a_to_b_name, route_a_to_b)
+    map_plotter.plot_multi_line_string(route_b_to_a_name, route_b_to_a)
     map_plotter.plot_waypoints("Waypoints", original_waypoints)
-    map_plotter.show(route_multi_line_string.centroid)
+    map_plotter.show(ways_multi_line_string.centroid)
 
 
 if __name__ == "__main__":

@@ -109,6 +109,24 @@ def create_longest_route(
     return create_route_line_string(waypoints, waypoint_connections, route)
 
 
+def make_route_creator(
+    waypoints: Waypoints,
+    waypoint_distances: Matrix,
+    waypoint_connections: WaypointConnections,
+    costs_matrix: Matrix,
+):
+
+    waypoint_indexes = list(range(len(waypoints)))
+    logger.info("creating route using %s waypoints", len(waypoints))
+    create_route_function = route_creator(waypoint_indexes, costs_matrix)
+
+    def create_route(start_index: int, end_index: int):
+        route = create_route_function(start_index, end_index)
+        return create_route_line_string(waypoints, waypoint_connections, route)
+
+    return create_route
+
+
 def create_route(
     features: Features, start_point: ImmutablePoint, end_point: ImmutablePoint
 ):
