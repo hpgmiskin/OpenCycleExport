@@ -9,6 +9,7 @@
 from typing import List, Dict, Tuple, Callable
 from collections import OrderedDict
 
+import time
 import logging
 
 import shapely.ops
@@ -157,6 +158,17 @@ def connection_cost_getter(line_forward_costs, line_reverse_costs):
     return get_connection_cost
 
 
+class Timer:
+    def __init__(self):
+        self.last_time = time.time()
+
+    def get_elapsed(self):
+        current_time = time.time()
+        elapsed = current_time - self.last_time
+        self.last_time = current_time
+        return elapsed
+
+
 def process_ways(
     ways: List[LineString],
     forward_coefficients: List[float],
@@ -175,32 +187,35 @@ def process_ways(
         Tuple[Waypoints, Matrix, WaypointConnections, Matrix] -- waypoints, waypoint_distances, waypoint_connections, cost_matrix
     """
 
-    logger.info("create line segment from %s ways", len(ways))
+    timer = Timer()
+
+    logger.info("create line segment from %s ways (%s)", len(ways), timer.get_elapsed())
     line_segments, line_segments_way_lookup = create_line_segments(ways)
+    logger.info("found %s line segments", len(line_segments))
 
-    logger.info("find line segment costs for forward and reverse")
+    logger.info(
+        "find line segment costs for forward and reverse (%s)", timer.get_elapsed()
+    )
     create_segment_costs = segment_cost_creator(line_segments, line_segments_way_lookup)
-    line_forward_costs = create_segment_costs(forward_coefficients)
-    line_reverse_costs = create_segment_costs(reverse_coefficients)
+    forward_costs = create_segment_costs(forward_coefficients)
+    reverse_costs = create_segment_costs(reverse_coefficients)
+    get_connection_cost = connection_cost_getter(forward_costs, reverse_costs)
 
-    logger.info("create waypoints from %s line segments", len(line_segments))
+    logger.info("create waypoints (%s)", timer.get_elapsed())
     waypoints, retrieve_connections = create_waypoints(line_segments)
     matrix_shape = (len(waypoints), len(waypoints))
 
-    logger.info("make empty matrixes for results")
+    logger.info("make empty matrixes for results (%s)", timer.get_elapsed())
     waypoint_distances: Matrix = make_matrix(matrix_shape)
     waypoint_connections: WaypointConnections = make_matrix(matrix_shape)
     costs_matrix: Matrix = make_matrix(matrix_shape)
 
-    logger.info("loop through all waypoint connections")
+    logger.info("loop through all waypoint connections (%s)", timer.get_elapsed())
     for i, point_a in enumerate(waypoints):
         for j, point_b in enumerate(waypoints):
             waypoint_distances[i][j] = point_a.distance(point_b)
             forward_connections = retrieve_connections(point_a, point_b)
             reverse_connections = retrieve_connections(point_b, point_a)
-            get_connection_cost = connection_cost_getter(
-                line_forward_costs, line_reverse_costs
-            )
             connections = [
                 *[(index, "forward") for index in forward_connections],
                 *[(index, "reverse") for index in reverse_connections],
@@ -217,4 +232,6 @@ def process_ways(
                 unconnected_cost = euclidean_distance * unconnected_coefficient
                 costs_matrix[i][j] = unconnected_cost
 
+    time_elapsed_looping_waypoints = timer.get_elapsed()
+    logger.info("process ways complete (%s)", time_elapsed_looping_waypoints)
     return waypoints, waypoint_distances, waypoint_connections, costs_matrix
