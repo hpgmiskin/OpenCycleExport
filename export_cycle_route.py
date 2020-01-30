@@ -1,6 +1,7 @@
 from typing import List, Dict, Tuple, Any
 
 import re
+import csv
 import json
 import os.path
 import logging
@@ -117,50 +118,12 @@ def closest_town_index_finder(town_points: List[ImmutablePoint]):
     return find_closest_town_index
 
 
-def main(recompute=True):
+def process_route_data(area, route_type, route_number):
 
-    area, route_type, route_number = "England", "ncn", 13
     route_name = "{}_{}_{}".format(format_name(area), route_type, route_number)
 
     route_features = download_cycle_route(area, route_type, route_number)["features"]
     logger.info("downloaded %s route features", len(route_features))
-
-    town_features = download_towns(area)["features"]
-    logger.info("downloaded %s town features", len(town_features))
-
-    # route_features = filter_features(route_features, create_bbox_polygon(*IOW_BBOX))
-    # route_features = filter_features(route_features, Polygon(PETERSFIELD_ROUNDABOUT))
-    # logger.warning("filtered features to %s entries", len(route_features))
-    # route_name = "{}_filter_{}".format(route_name, len(route_features))
-    # print(json.dumps(route_features, indent=4))
-
-    town_names = [
-        feature.get("properties", {}).get("name") for feature in town_features
-    ]
-    town_points = [
-        ImmutablePoint(*feature.get("geometry", {}).get("coordinates"))
-        for feature in town_features
-    ]
-    find_closest_town_index = closest_town_index_finder(town_points)
-
-    line_strings = list(map(shapely.geometry.shape, map(get_geometry, route_features)))
-    original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
-    ways_multi_line_string = merge_line_strings(line_strings)
-
-    # # start_point = ImmutablePoint(-1.320715, 50.696457)
-    # # end_point = ImmutablePoint(-0.170461, 51.324368)  # LONDON
-    # # end_point = ImmutablePoint(-1.159577, 50.73947)  # FERRY
-    # # end_point = ImmutablePoint(-1.299863, 50.701102)  # SMALL
-    # # end_point = ImmutablePoint(-1.31873, 50.696209)  # TINY
-
-    # # Route 13
-    # start_point = ImmutablePoint(-0.074152, 51.506911)
-    # end_point = ImmutablePoint(0.922066, 52.784473)
-
-    # map_plotter = MapPlotter()
-    # map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
-    # map_plotter.plot_waypoints("Waypoints", original_waypoints)
-    # map_plotter.show(ways_multi_line_string.centroid)
 
     waypoints_filename = "{}_waypoints".format(route_name)
     waypoint_distances_filename = "{}_waypoint_distances".format(route_name)
@@ -182,8 +145,43 @@ def main(recompute=True):
         store_geometry(waypoint_connections, waypoint_connections_filename)
         store_json(costs_matrix, costs_matrix_filename)
 
-    inputs = waypoints, waypoint_distances, waypoint_connections, costs_matrix
-    route_creator = make_route_creator(*inputs)
+    return (
+        route_features,
+        waypoints,
+        waypoint_distances,
+        waypoint_connections,
+        costs_matrix,
+    )
+
+
+def create_route(area, route_type, route_number):
+
+    process_route_data_results = process_route_data(area, route_type, route_number)
+    route_features, *route_creator_inputs = process_route_data_results
+    (
+        waypoints,
+        waypoint_distances,
+        waypoint_connections,
+        costs_matrix,
+    ) = route_creator_inputs
+
+    line_strings = list(map(shapely.geometry.shape, map(get_geometry, route_features)))
+    original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
+    ways_multi_line_string = merge_line_strings(line_strings)
+
+    town_features = download_towns(area)["features"]
+    logger.info("downloaded %s town features", len(town_features))
+
+    town_names = [
+        feature.get("properties", {}).get("name") for feature in town_features
+    ]
+    town_points = [
+        ImmutablePoint(*feature.get("geometry", {}).get("coordinates"))
+        for feature in town_features
+    ]
+    find_closest_town_index = closest_town_index_finder(town_points)
+
+    route_creator = make_route_creator(*route_creator_inputs)
 
     point_a_index, point_b_index = find_furthest_waypoints(waypoint_distances)
 
@@ -205,6 +203,21 @@ def main(recompute=True):
     map_plotter.plot_multi_line_string(route_b_to_a_name, route_b_to_a)
     map_plotter.plot_waypoints("Waypoints", original_waypoints)
     map_plotter.show(ways_multi_line_string.centroid)
+
+
+def get_csv_data(filename):
+    with open(filename) as open_file:
+        csv_file = csv.reader(open_file)
+        return list(csv_file)[1:]
+
+
+def main():
+    for area, route_type, route_number in get_csv_data("data/cycle_routes.csv"):
+        try:
+            logger.info("%s %s %s", area, route_type, route_number)
+            process_route_data(area, route_type, route_number)
+        except Exception as error:
+            logger.error("Failed to process route {}".format(route_number))
 
 
 if __name__ == "__main__":
