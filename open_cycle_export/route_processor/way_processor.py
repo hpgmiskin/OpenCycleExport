@@ -206,31 +206,29 @@ def process_ways(
     matrix_shape = (len(waypoints), len(waypoints))
 
     logger.info("make empty matrixes for results (%s)", timer.get_elapsed())
-    waypoint_distances: Matrix = make_matrix(matrix_shape)
     waypoint_connections: WaypointConnections = make_matrix(matrix_shape)
     costs_matrix: Matrix = make_matrix(matrix_shape)
 
     logger.info("loop through all waypoint connections (%s)", timer.get_elapsed())
+    waypoint_distances = [[w_a.distance(w_b) for w_b in waypoints] for w_a in waypoints]
+
     for i, point_a in enumerate(waypoints):
         for j, point_b in enumerate(waypoints):
-            waypoint_distances[i][j] = point_a.distance(point_b)
-            forward_connections = retrieve_connections(point_a, point_b)
-            reverse_connections = retrieve_connections(point_b, point_a)
             connections = [
-                *[(index, "forward") for index in forward_connections],
-                *[(index, "reverse") for index in reverse_connections],
+                (index, "forward") for index in retrieve_connections(point_a, point_b)
+            ] + [
+                (index, "reverse") for index in retrieve_connections(point_b, point_a)
             ]
             if len(connections):
                 connection_index, direction = min(connections, key=get_connection_cost)
-                is_forward = direction == "forward"
-                line = line_segments[connection_index]
-                directed_line = line if is_forward else reverse_line_string(line)
-                waypoint_connections[i][j] = directed_line
+                waypoint_connections[i][j] = (
+                    line_segments[connection_index]
+                    if direction == "forward"
+                    else reverse_line_string(line_segments[connection_index])
+                )
                 costs_matrix[i][j] = get_connection_cost((connection_index, direction))
             else:
-                euclidean_distance = waypoint_distances[i][j]
-                unconnected_cost = euclidean_distance * unconnected_coefficient
-                costs_matrix[i][j] = unconnected_cost
+                costs_matrix[i][j] = waypoint_distances[i][j] * unconnected_coefficient
 
     time_elapsed_looping_waypoints = timer.get_elapsed()
     logger.info("process ways complete (%s)", time_elapsed_looping_waypoints)
