@@ -3,24 +3,28 @@ import json
 from open_cycle_export.route_downloader.query_overpass import query_overpass
 
 
-def download_places(search_area, places=["town", "city"]):
+def download_places(area_name, places=["town", "city"], min_area_tags=16):
 
-    search_area = "United Kingdom" if search_area == "Great Britain" else search_area
+    area_name = "United Kingdom" if area_name == "Great Britain" else area_name
 
     query = """
-        area["name"="{search_area}"]->.boundaryarea;
         (
-            node["place"~"{place_query}"](area.boundaryarea);
+            area["name"="{area_name}"](if: count_tags() > {min_area_tags});
+            area["name:en"="{area_name}"](if: count_tags() > {min_area_tags});
+        )->.searchArea;
+        (
+            node["place"~"{place_query}"](area.searchArea);
         );
     """.format(
-        search_area=search_area, place_query="|".join(places)
+        area_name=area_name, place_query="|".join(places), min_area_tags=min_area_tags
     )
 
     return query_overpass(query, "geom")
 
 
 if __name__ == "__main__":
-    # places = download_places("Isle of Wight")
-    places = download_places("United Kingdom")
+    places = download_places("Isle of Wight")
+    # places = download_places("Great Britain")
+    # places = download_places("United Kingdom")
     print([feature["properties"]["name"] for feature in places["features"]])
     # print(json.dumps(places, indent=4))

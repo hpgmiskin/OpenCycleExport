@@ -15,27 +15,53 @@ def get_lat_lon(coords: Iterator[Tuple[float, float]]):
     return dict(lon=list(map(get_lon, coords_a)), lat=list(map(get_lat, coords_b)))
 
 
+COLORS = ["red", "green", "blue", "orange", "purple", "pink", "navy"]
+SYMBOLS = ["circle", "square", "diamond", "cross", "x", "triangle", "star"]
+
+
 class MapPlotter:
 
+    line_index: int
     figure: plotly.graph_objects.Figure
 
     def __init__(self):
+        self.line_index = 0
         self.figure = plotly.graph_objects.Figure()
+
+    def plot_line_string(self, name_base: str, line_string: LineString):
+        name = "{} {}".format(name_base, self.line_index)
+        color = COLORS[self.line_index % len(COLORS)]
+        symbol = SYMBOLS[self.line_index % len(SYMBOLS)]
+        self._add_scattermapbox(
+            name=name,
+            mode="lines",
+            line=dict(color=color),
+            **get_lat_lon(line_string.coords)
+        )
+        self._add_scattermapbox(
+            name=name,
+            mode="markers",
+            marker=dict(color=color, size=12),
+            **get_lat_lon([line_string.coords[0], line_string.coords[-1]])
+        )
+        self.line_index += 1
 
     def plot_multi_line_string(self, name: str, multi_line_string: MultiLineString):
         coords = itertools.chain(*[line.coords for line in multi_line_string])
         self._add_scattermapbox(name=name, mode="lines", **get_lat_lon(coords))
 
-    def plot_waypoints(self, name: str, waypoints: List[Point]):
+    def plot_waypoints(self, name: str, waypoints: List[Point], size: int = 12):
         coords = map(lambda point: (point.x, point.y), waypoints)
-        self._add_scattermapbox(name=name, mode="markers", **get_lat_lon(coords))
+        self._add_scattermapbox(
+            name=name, mode="markers", marker=dict(size=size), **get_lat_lon(coords)
+        )
 
-    def show(self, center: Point):
+    def show(self, center: Point, zoom: int = 10):
         self.figure.update_layout(
             mapbox={
                 "center": {"lon": center.x, "lat": center.y},
                 "style": "stamen-terrain",
-                "zoom": 10,
+                "zoom": zoom,
             }
         )
         self.figure.show()

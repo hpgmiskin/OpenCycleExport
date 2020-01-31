@@ -23,6 +23,12 @@ def find_elevations(coordinates: List[Tuple[float, float]]) -> List[float]:
     try:
         response = request.json()
         return [result["elevation"] for result in response["results"]]
+    except TimeoutError:
+        logger.error("Elevation not found - Timeout error")
+        return []
+    except requests.exceptions.ConnectionError:
+        logger.error("Elevation not found - Connection error")
+        return []
     except json.decoder.JSONDecodeError:
         error = re.search(r"<title>(.*)</title>", request.text)
         logger.error("Elevation not found - %s", error.group(1))

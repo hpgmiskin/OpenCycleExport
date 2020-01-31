@@ -16,34 +16,37 @@ def get_first_way_coordinates(members):
             return get_coordinates(member["geometry"])
 
 
-def download_city_boundaries(search_area):
+def download_city_boundaries(area_name, min_area_tags=16):
 
     query = """
-        area["name"="{search_area}"]->.boundaryarea;
         (
-            relation(area.boundaryarea)["place"="city"];
+            area["name"="{area_name}"](if: count_tags() > {min_area_tags});
+            area["name:en"="{area_name}"](if: count_tags() > {min_area_tags});
+        )->.searchArea;
+        (
+            area(area.searchArea)["place"="city"];
         );
     """.format(
-        search_area=search_area
+        area_name=area_name, min_area_tags=min_area_tags
     )
 
-    city_data = query_overpass(query, verbosity="geom", responseformat="json")
+    return query_overpass(query)
 
-    return [
-        {
-            "type": "feature",
-            "properties": {
-                key: value for key, value in element["tags"].items() if ":" not in key
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": get_first_way_coordinates(element["members"]),
-            },
-        }
-        for element in city_data["elements"]
-    ]
+    # return [
+    #     {
+    #         "type": "feature",
+    #         "properties": {
+    #             key: value for key, value in element["tags"].items() if ":" not in key
+    #         },
+    #         "geometry": {
+    #             "type": "Polygon",
+    #             "coordinates": get_first_way_coordinates(element["members"]),
+    #         },
+    #     }
+    #     for element in city_data["elements"]
+    # ]
 
 
 if __name__ == "__main__":
-    city_features = download_cities("England")
+    city_features = download_city_boundaries("Gloucestershire")
     print(json.dumps(city_features))

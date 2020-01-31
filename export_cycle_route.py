@@ -36,7 +36,7 @@ get_geometry = operator.itemgetter("geometry")
 
 
 def format_name(name: str, substitute=""):
-    return re.sub(r"\s+", substitute, name).lower()
+    return re.sub(r"\W+", substitute, name).lower()
 
 
 def get_file_path(name: str, folder: str, extension: str = "json"):
@@ -91,18 +91,6 @@ def load_waypoint_connections(filename: str):
             for connection in row
         ]
         for row in load_json(filename)
-    ]
-
-
-def create_bbox_polygon(min_x, min_y, max_x, max_y):
-    return Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
-
-
-def filter_features(features: List[Dict], polygon: Polygon):
-    return [
-        feature
-        for feature in features
-        if shapely.geometry.shape(get_geometry(feature)).intersects(polygon)
     ]
 
 
@@ -162,16 +150,13 @@ def process_route_data(area, route_type, route_number):
 def plot_routes(route_features, routes):
 
     line_strings = list(map(shapely.geometry.shape, map(get_geometry, route_features)))
-    original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
     ways_multi_line_string = merge_line_strings(line_strings)
 
     map_plotter = MapPlotter()
-    map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
 
     for route_name, route_multi_line_string in routes:
         map_plotter.plot_multi_line_string(route_name, route_multi_line_string)
 
-    map_plotter.plot_waypoints("Waypoints", original_waypoints)
     map_plotter.show(ways_multi_line_string.centroid)
 
 
@@ -211,9 +196,8 @@ def create_route(area, route_type, route_number, show_plot=False):
     place_name_a = place_names[find_closest_place_index(waypoint_a)]
     place_name_b = place_names[find_closest_place_index(waypoint_b)]
 
-    base_name = "{} {} {}".format(abbreviate_area(area), route_type, route_number)
-    route_a_to_b_name = "{} {} to {}".format(base_name, place_name_a, place_name_b)
-    route_b_to_a_name = "{} {} to {}".format(base_name, place_name_b, place_name_a)
+    route_a_to_b_name = "{} - {} to {}".format(route_number, place_name_a, place_name_b)
+    route_b_to_a_name = "{} - {} to {}".format(route_number, place_name_b, place_name_a)
 
     if show_plot:
         plot_routes(
@@ -222,8 +206,11 @@ def create_route(area, route_type, route_number, show_plot=False):
         )
 
     logger.info("export gpx files for both directions")
-    export_gpx_route(route_a_to_b, route_a_to_b_name)
-    export_gpx_route(route_b_to_a, route_b_to_a_name)
+    base_name = "{} {}".format(abbreviate_area(area), route_type)
+    route_a_to_b_full_name = "{} {}".format(base_name, route_a_to_b_name)
+    route_b_to_a_full_name = "{} {}".format(base_name, route_b_to_a_name)
+    export_gpx_route(route_a_to_b, route_a_to_b_full_name)
+    export_gpx_route(route_b_to_a, route_b_to_a_full_name)
     logger.info("route creation complete")
 
 
@@ -233,16 +220,24 @@ def get_csv_data(filename):
         return list(csv_file)[1:]
 
 
+def create_all_routes(area=None):
+    cycle_routes = get_csv_data("data/cycle_routes.csv")
+    cycle_routes = (
+        cycle_routes
+        if area is None
+        else [cycle_route for cycle_route in cycle_routes if cycle_route[0] == area]
+    )
+    for area, route_type, route_number in cycle_routes:
+        logger.info("creating route %s %s %s", area, route_type, route_number)
+        create_route(area, route_type, route_number)
+
+
 def main():
-    for area, route_type, route_number in get_csv_data("data/cycle_routes.csv"):
-        try:
-            logger.info("%s %s %s", area, route_type, route_number)
-            process_route_data(area, route_type, route_number)
-        except Exception as error:
-            logger.error("Failed to process route {}".format(route_number))
+    create_route("Belgium", "ncn", "F4", True)
+    create_route("France", "ncn", "V87", True)
+    create_route("Great Britain", "ncn", "1", True)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    create_route("France", "ncn", "V43")
-    # main()
+    main()

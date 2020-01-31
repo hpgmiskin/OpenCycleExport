@@ -3,25 +3,27 @@ import json
 from open_cycle_export.route_downloader.query_overpass import query_overpass
 
 
-def download_cycle_route(search_area, cycle_network, route_number):
+def download_cycle_route(area_name, cycle_network, route_number, min_area_tags=16):
 
     query = """
-        area["name"="{search_area}"]->.boundaryarea;
+        (
+            area["name"="{area_name}"](if: count_tags() > {min_area_tags});
+            area["name:en"="{area_name}"](if: count_tags() > {min_area_tags});
+        )->.searchArea;
         (
             relation
-                (area.boundaryarea)
                 ["route"="bicycle"]
                 ["network"="{cycle_network}"]
-                ["ref"="{route_number}"];
+                ["ref"="{route_number}"]
+                (area.searchArea);
             way(r);
         );
     """.format(
-        search_area=search_area, cycle_network=cycle_network, route_number=route_number
+        area_name=area_name,
+        cycle_network=cycle_network,
+        route_number=route_number,
+        min_area_tags=min_area_tags,
     )
-
-    # TODO: download relation metadata
-    # way(r);
-    # node(w);
 
     return query_overpass(query, "geom")
 

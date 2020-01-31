@@ -8,7 +8,9 @@ import logging
 import requests
 import overpass
 
-api = overpass.API(timeout=600)
+endpoint = "https://overpass-api.de/api/interpreter"
+# endpoint = "http://overpass.openstreetmap.fr/api/interpreter"
+api = overpass.API(timeout=512, endpoint=endpoint)
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +41,11 @@ def get_cache_path(query_hash):
     return os.path.join(cache_folder, "{}.json".format(query_hash))
 
 
-def query_overpass(query, verbosity="body", responseformat="geojson"):
+def query_overpass(query, verbosity="body", responseformat="geojson", build=True):
     minified_query = minify_query(query)
-    query_hash = hash_string(minified_query + verbosity + responseformat)
+    full_query_reference = "".join([minified_query, verbosity, responseformat])
+    query_reference = full_query_reference if build else minified_query
+    query_hash = hash_string(query_reference)
     cache_path = get_cache_path(query_hash)
     try:
         data = json.load(open(cache_path))
@@ -49,7 +53,7 @@ def query_overpass(query, verbosity="body", responseformat="geojson"):
         return data
     except:
         logger.info("query overpass")
-        kwargs = dict(verbosity=verbosity, responseformat=responseformat)
+        kwargs = dict(verbosity=verbosity, responseformat=responseformat, build=build)
         data = api.get(minified_query, **kwargs)
         json.dump(data, open(cache_path, "w"))
         return data
