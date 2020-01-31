@@ -1,69 +1,247 @@
 area,type,number
-England,ncn,10
-England,ncn,11
-England,ncn,12
-England,ncn,13
-England,ncn,14
-England,ncn,15
-England,ncn,16
-England,ncn,17
-England,ncn,18
-England,ncn,20
-England,ncn,21
-England,ncn,22
-England,ncn,23
-England,ncn,24
-England,ncn,25
-England,ncn,26
-England,ncn,27
-England,ncn,28
-England,ncn,32
-England,ncn,33
-England,ncn,34
-England,ncn,41
-England,ncn,42
-England,ncn,43
-England,ncn,44
-England,ncn,45
-England,ncn,46
-England,ncn,47
-England,ncn,48
-England,ncn,50
-England,ncn,51
-England,ncn,52
-England,ncn,53
-England,ncn,54
-England,ncn,55
-England,ncn,56
-England,ncn,57
-England,ncn,60
-England,ncn,61
-England,ncn,62
-England,ncn,63
-England,ncn,64
-England,ncn,65
-England,ncn,66
-England,ncn,67
-England,ncn,68
-England,ncn,69
-England,ncn,70
-England,ncn,71
-England,ncn,72
-England,ncn,73
-England,ncn,74
-England,ncn,75
-England,ncn,76
-England,ncn,77
-England,ncn,78
-England,ncn,79
-England,ncn,81
-England,ncn,82
-England,ncn,84
-England,ncn,85
-England,ncn,88
-England,ncn,91
-England,ncn,92
-England,ncn,93
-England,ncn,94
-England,ncn,95
-England,ncn,96
+Great Britain,ncn,1
+Great Britain,ncn,2
+Great Britain,ncn,3
+Great Britain,ncn,4
+Great Britain,ncn,5
+Great Britain,ncn,6
+Great Britain,ncn,7
+Great Britain,ncn,8
+Great Britain,ncn,9
+Great Britain,ncn,10
+Great Britain,ncn,11
+Great Britain,ncn,12
+Great Britain,ncn,13
+Great Britain,ncn,14
+Great Britain,ncn,15
+Great Britain,ncn,16
+Great Britain,ncn,17
+Great Britain,ncn,18
+Great Britain,ncn,20
+Great Britain,ncn,21
+Great Britain,ncn,22
+Great Britain,ncn,23
+Great Britain,ncn,24
+Great Britain,ncn,25
+Great Britain,ncn,26
+Great Britain,ncn,27
+Great Britain,ncn,28
+Great Britain,ncn,32
+Great Britain,ncn,33
+Great Britain,ncn,34
+Great Britain,ncn,41
+Great Britain,ncn,42
+Great Britain,ncn,43
+Great Britain,ncn,44
+Great Britain,ncn,45
+Great Britain,ncn,46
+Great Britain,ncn,47
+Great Britain,ncn,48
+Great Britain,ncn,50
+Great Britain,ncn,51
+Great Britain,ncn,52
+Great Britain,ncn,53
+Great Britain,ncn,54
+Great Britain,ncn,55
+Great Britain,ncn,56
+Great Britain,ncn,57
+Great Britain,ncn,60
+Great Britain,ncn,61
+Great Britain,ncn,62
+Great Britain,ncn,63
+Great Britain,ncn,64
+Great Britain,ncn,65
+Great Britain,ncn,66
+Great Britain,ncn,67
+Great Britain,ncn,68
+Great Britain,ncn,69
+Great Britain,ncn,70
+Great Britain,ncn,71
+Great Britain,ncn,72
+Great Britain,ncn,73
+Great Britain,ncn,74
+Great Britain,ncn,75
+Great Britain,ncn,76
+Great Britain,ncn,77
+Great Britain,ncn,78
+Great Britain,ncn,79
+Great Britain,ncn,81
+Great Britain,ncn,82
+Great Britain,ncn,84
+Great Britain,ncn,85
+Great Britain,ncn,88
+Great Britain,ncn,91
+Great Britain,ncn,92
+Great Britain,ncn,93
+Great Britain,ncn,94
+Great Britain,ncn,95
+Great Britain,ncn,96
+Great Britain,ncn,125
+Great Britain,ncn,136
+Great Britain,ncn,137
+Great Britain,ncn,141
+Great Britain,ncn,151
+Great Britain,ncn,155
+Great Britain,ncn,162
+Great Britain,ncn,164
+Great Britain,ncn,165
+Great Britain,ncn,166
+Great Britain,ncn,167
+Great Britain,ncn,168
+Great Britain,ncn,169
+Great Britain,ncn,172
+Great Britain,ncn,174
+Great Britain,ncn,177
+Great Britain,ncn,178
+Great Britain,ncn,179
+Great Britain,ncn,195
+Great Britain,ncn,196
+Great Britain,ncn,207
+Great Britain,ncn,208
+Great Britain,ncn,212
+Great Britain,ncn,221
+Great Britain,ncn,222
+Great Britain,ncn,223
+Great Britain,ncn,224
+Great Britain,ncn,231
+Great Britain,ncn,232
+Great Britain,ncn,235
+Great Britain,ncn,236
+Great Britain,ncn,244
+Great Britain,ncn,246
+Great Britain,ncn,248
+Great Britain,ncn,250
+Great Britain,ncn,253
+Great Britain,ncn,254
+Great Britain,ncn,255
+Great Britain,ncn,256
+Great Britain,ncn,264
+Great Britain,ncn,267
+Great Britain,ncn,270
+Great Britain,ncn,272
+Great Britain,ncn,273
+Great Britain,ncn,274
+Great Britain,ncn,275
+Great Britain,ncn,276
+Great Britain,ncn,277
+Great Britain,ncn,278
+Great Britain,ncn,305
+Great Britain,ncn,326
+Great Britain,ncn,334
+Great Britain,ncn,338
+Great Britain,ncn,339
+Great Britain,ncn,341
+Great Britain,ncn,344
+Great Britain,ncn,403
+Great Britain,ncn,410
+Great Britain,ncn,413
+Great Britain,ncn,416
+Great Britain,ncn,423
+Great Britain,ncn,425
+Great Britain,ncn,426
+Great Britain,ncn,436
+Great Britain,ncn,437
+Great Britain,ncn,438
+Great Britain,ncn,439
+Great Britain,ncn,440
+Great Britain,ncn,442
+Great Britain,ncn,446
+Great Britain,ncn,447
+Great Britain,ncn,448
+Great Britain,ncn,451
+Great Britain,ncn,455
+Great Britain,ncn,461
+Great Britain,ncn,465
+Great Britain,ncn,466
+Great Britain,ncn,467
+Great Britain,ncn,468
+Great Britain,ncn,469
+Great Britain,ncn,475
+Great Britain,ncn,476
+Great Britain,ncn,477
+Great Britain,ncn,478
+Great Britain,ncn,481
+Great Britain,ncn,482
+Great Britain,ncn,485
+Great Britain,ncn,492
+Great Britain,ncn,523
+Great Britain,ncn,524
+Great Britain,ncn,525
+Great Britain,ncn,526
+Great Britain,ncn,533
+Great Britain,ncn,534
+Great Britain,ncn,535
+Great Britain,ncn,536
+Great Britain,ncn,539
+Great Britain,ncn,544
+Great Britain,ncn,547
+Great Britain,ncn,548
+Great Britain,ncn,549
+Great Britain,ncn,550
+Great Britain,ncn,552
+Great Britain,ncn,554
+Great Britain,ncn,555
+Great Britain,ncn,558
+Great Britain,ncn,559
+Great Britain,ncn,561
+Great Britain,ncn,562
+Great Britain,ncn,566
+Great Britain,ncn,568
+Great Britain,ncn,573
+Great Britain,ncn,576
+Great Britain,ncn,577
+Great Britain,ncn,585
+Great Britain,ncn,622
+Great Britain,ncn,627
+Great Britain,ncn,633
+Great Britain,ncn,636
+Great Britain,ncn,645
+Great Britain,ncn,646
+Great Britain,ncn,647
+Great Britain,ncn,648
+Great Britain,ncn,656
+Great Britain,ncn,657
+Great Britain,ncn,658
+Great Britain,ncn,665
+Great Britain,ncn,668
+Great Britain,ncn,672
+Great Britain,ncn,674
+Great Britain,ncn,676
+Great Britain,ncn,677
+Great Britain,ncn,680
+Great Britain,ncn,681
+Great Britain,ncn,686
+Great Britain,ncn,688
+Great Britain,ncn,689
+Great Britain,ncn,696
+Great Britain,ncn,697
+Great Britain,ncn,699
+Great Britain,ncn,700
+Great Britain,ncn,715
+Great Britain,ncn,725
+Great Britain,ncn,753
+Great Britain,ncn,754
+Great Britain,ncn,756
+Great Britain,ncn,764
+Great Britain,ncn,765
+Great Britain,ncn,766
+Great Britain,ncn,767
+Great Britain,ncn,768
+Great Britain,ncn,775
+Great Britain,ncn,776
+Great Britain,ncn,777
+Great Britain,ncn,780
+Great Britain,ncn,810
+Great Britain,ncn,811
+Great Britain,ncn,818
+Great Britain,ncn,819
+Great Britain,ncn,820
+Great Britain,ncn,822
+Great Britain,ncn,825
+Great Britain,ncn,862
+Great Britain,ncn,881
+Great Britain,ncn,882
+Great Britain,ncn,883
+Great Britain,ncn,884
+Great Britain,ncn,885
+Great Britain,ncn,887

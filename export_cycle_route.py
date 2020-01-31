@@ -15,7 +15,7 @@ from shapely.geometry.base import BaseGeometry
 
 from open_cycle_export.map_builder.map_plotter import MapPlotter
 from open_cycle_export.route_downloader.download_cycle_route import download_cycle_route
-from open_cycle_export.route_downloader.download_towns import download_towns
+from open_cycle_export.route_downloader.download_places import download_places
 from open_cycle_export.route_processor.route_processor import (
     process_route_features,
     find_furthest_waypoints,
@@ -109,18 +109,19 @@ def format_name(name: str):
     return re.sub(r"\s+", "", name).lower()
 
 
-def closest_town_index_finder(town_points: List[ImmutablePoint]):
-    town_indexes = list(range(len(town_points)))
+def closest_place_index_finder(place_points: List[ImmutablePoint]):
+    place_indexes = list(range(len(place_points)))
 
-    def find_closest_town_index(search_point: ImmutablePoint):
-        return min(town_indexes, key=lambda i: search_point.distance(town_points[i]))
+    def find_closest_place_index(search_point: ImmutablePoint):
+        return min(place_indexes, key=lambda i: search_point.distance(place_points[i]))
 
-    return find_closest_town_index
+    return find_closest_place_index
 
 
 def process_route_data(area, route_type, route_number):
 
     route_name = "{}_{}_{}".format(format_name(area), route_type, route_number)
+    logger.info("process route %s", route_name)
 
     route_features = download_cycle_route(area, route_type, route_number)["features"]
     logger.info("downloaded %s route features", len(route_features))
@@ -169,17 +170,17 @@ def create_route(area, route_type, route_number):
     original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
     ways_multi_line_string = merge_line_strings(line_strings)
 
-    town_features = download_towns(area)["features"]
-    logger.info("downloaded %s town features", len(town_features))
+    place_features = download_places(area)["features"]
+    logger.info("downloaded %s place features", len(place_features))
 
-    town_names = [
-        feature.get("properties", {}).get("name") for feature in town_features
+    place_names = [
+        feature.get("properties", {}).get("name") for feature in place_features
     ]
-    town_points = [
+    place_points = [
         ImmutablePoint(*feature.get("geometry", {}).get("coordinates"))
-        for feature in town_features
+        for feature in place_features
     ]
-    find_closest_town_index = closest_town_index_finder(town_points)
+    find_closest_place_index = closest_place_index_finder(place_points)
 
     route_creator = make_route_creator(*route_creator_inputs)
 
@@ -191,11 +192,11 @@ def create_route(area, route_type, route_number):
     waypoint_a = waypoints[point_a_index]
     waypoint_b = waypoints[point_b_index]
 
-    waypoint_a_town_name = town_names[find_closest_town_index(waypoint_a)]
-    waypoint_b_town_name = town_names[find_closest_town_index(waypoint_b)]
+    waypoint_a_place_name = place_names[find_closest_place_index(waypoint_a)]
+    waypoint_b_place_name = place_names[find_closest_place_index(waypoint_b)]
 
-    route_a_to_b_name = "{} to {}".format(waypoint_a_town_name, waypoint_b_town_name)
-    route_b_to_a_name = "{} to {}".format(waypoint_b_town_name, waypoint_a_town_name)
+    route_a_to_b_name = "{} to {}".format(waypoint_a_place_name, waypoint_b_place_name)
+    route_b_to_a_name = "{} to {}".format(waypoint_b_place_name, waypoint_a_place_name)
 
     map_plotter = MapPlotter()
     map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
@@ -222,4 +223,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    # create_route("Great Britain", "ncn", 22)
     main()

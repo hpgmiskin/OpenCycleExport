@@ -76,7 +76,11 @@ class TestWayProcessor(unittest.TestCase):
         unconnected_coefficient = 100
 
         waypoints, _, waypoint_connections, cost_matrix = process_ways(
-            ways, forward_coefficients, reverse_coefficients, unconnected_coefficient
+            ways,
+            forward_coefficients,
+            reverse_coefficients,
+            unconnected_coefficient,
+            10,
         )
 
         self.assertEqual(waypoints[0], ImmutablePoint(0, 0))
@@ -101,7 +105,11 @@ class TestWayProcessor(unittest.TestCase):
         unconnected_coefficient = 1000
 
         waypoints, _, waypoint_connections, cost_matrix = process_ways(
-            ways, forward_coefficients, reverse_coefficients, unconnected_coefficient
+            ways,
+            forward_coefficients,
+            reverse_coefficients,
+            unconnected_coefficient,
+            10,
         )
 
         expected_waypoints = [

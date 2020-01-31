@@ -174,6 +174,7 @@ def process_ways(
     forward_coefficients: List[float],
     reverse_coefficients: List[float],
     unconnected_coefficient: float,
+    close_waypoint_distance: float = 0.5,
 ) -> Tuple[Waypoints, WaypointConnections, Matrix, Matrix]:
     """Process ways to be used in route creation
     
@@ -191,11 +192,8 @@ def process_ways(
 
     logger.info("create line segment from %s ways (%s)", len(ways), timer.get_elapsed())
     line_segments, line_segments_way_lookup = create_line_segments(ways)
-    logger.info("found %s line segments", len(line_segments))
 
-    logger.info(
-        "find line segment costs for forward and reverse (%s)", timer.get_elapsed()
-    )
+    logger.info("find line segment costs (%s)", timer.get_elapsed())
     create_segment_costs = segment_cost_creator(line_segments, line_segments_way_lookup)
     forward_costs = create_segment_costs(forward_coefficients)
     reverse_costs = create_segment_costs(reverse_coefficients)
@@ -214,21 +212,28 @@ def process_ways(
 
     for i, point_a in enumerate(waypoints):
         for j, point_b in enumerate(waypoints):
-            connections = [
-                (index, "forward") for index in retrieve_connections(point_a, point_b)
-            ] + [
-                (index, "reverse") for index in retrieve_connections(point_b, point_a)
-            ]
-            if len(connections):
-                connection_index, direction = min(connections, key=get_connection_cost)
-                waypoint_connections[i][j] = (
-                    line_segments[connection_index]
-                    if direction == "forward"
-                    else reverse_line_string(line_segments[connection_index])
-                )
-                costs_matrix[i][j] = get_connection_cost((connection_index, direction))
-            else:
-                costs_matrix[i][j] = waypoint_distances[i][j] * unconnected_coefficient
+            if waypoint_distances[i][j] < close_waypoint_distance:
+                connections = [
+                    (index, "forward")
+                    for index in retrieve_connections(point_a, point_b)
+                ] + [
+                    (index, "reverse")
+                    for index in retrieve_connections(point_b, point_a)
+                ]
+                if len(connections):
+                    connection_index, direction = min(
+                        connections, key=get_connection_cost
+                    )
+                    waypoint_connections[i][j] = (
+                        line_segments[connection_index]
+                        if direction == "forward"
+                        else reverse_line_string(line_segments[connection_index])
+                    )
+                    costs_matrix[i][j] = get_connection_cost(
+                        (connection_index, direction)
+                    )
+                    continue
+            costs_matrix[i][j] = waypoint_distances[i][j] * unconnected_coefficient
 
     time_elapsed_looping_waypoints = timer.get_elapsed()
     logger.info("process ways complete (%s)", time_elapsed_looping_waypoints)
