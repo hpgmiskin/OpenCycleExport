@@ -106,18 +106,6 @@ def filter_features(features: List[Dict], polygon: Polygon):
     ]
 
 
-IOW_BBOX = [-1.599259, 50.560611, -1.051316, 50.778640]
-SMALL_BBOX = [-1.599259, 50.560611, -1.299863, 50.701102]
-TINY_BBOX = [-1.599259, 50.560611, -1.31873, 50.696457]
-PETERSFIELD_ROUNDABOUT = [
-    (-0.9434456, 50.9970774),
-    (-0.9435448, 50.9966503),
-    (-0.9427268, 50.9966385),
-    (-0.9427429, 50.9970774),
-    (-0.9434456, 50.9970774),
-]
-
-
 def merge_line_strings(line_strings: List[LineString]):
     ways_multi_line_string = shapely.ops.linemerge(line_strings)
     if isinstance(ways_multi_line_string, MultiLineString):
@@ -171,20 +159,32 @@ def process_route_data(area, route_type, route_number):
     )
 
 
-def create_route(area, route_type, route_number, plot_route=False):
-
-    process_route_data_results = process_route_data(area, route_type, route_number)
-    route_features, *route_creator_inputs = process_route_data_results
-    (
-        waypoints,
-        waypoint_distances,
-        waypoint_connections,
-        costs_matrix,
-    ) = route_creator_inputs
+def plot_routes(route_features, routes):
 
     line_strings = list(map(shapely.geometry.shape, map(get_geometry, route_features)))
     original_waypoints = [Point(line_string.coords[0]) for line_string in line_strings]
     ways_multi_line_string = merge_line_strings(line_strings)
+
+    map_plotter = MapPlotter()
+    map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
+
+    for route_name, route_multi_line_string in routes:
+        map_plotter.plot_multi_line_string(route_name, route_multi_line_string)
+
+    map_plotter.plot_waypoints("Waypoints", original_waypoints)
+    map_plotter.show(ways_multi_line_string.centroid)
+
+
+def abbreviate_area(area):
+    words = re.split(r"\s+", area)
+    return area[:2] if len(words) < 2 else "".join([word[0] for word in words])
+
+
+def create_route(area, route_type, route_number, show_plot=False):
+
+    process_route_data_results = process_route_data(area, route_type, route_number)
+    route_features, *route_creator_inputs = process_route_data_results
+    waypoints, waypoint_distances = route_creator_inputs[:2]
 
     place_features = download_places(area)["features"]
     logger.info("downloaded %s place features", len(place_features))
@@ -208,22 +208,23 @@ def create_route(area, route_type, route_number, plot_route=False):
     waypoint_a = waypoints[point_a_index]
     waypoint_b = waypoints[point_b_index]
 
-    waypoint_a_place_name = place_names[find_closest_place_index(waypoint_a)]
-    waypoint_b_place_name = place_names[find_closest_place_index(waypoint_b)]
+    place_name_a = place_names[find_closest_place_index(waypoint_a)]
+    place_name_b = place_names[find_closest_place_index(waypoint_b)]
 
-    route_a_to_b_name = "{} to {}".format(waypoint_a_place_name, waypoint_b_place_name)
-    route_b_to_a_name = "{} to {}".format(waypoint_b_place_name, waypoint_a_place_name)
+    base_name = "{} {} {}".format(abbreviate_area(area), route_type, route_number)
+    route_a_to_b_name = "{} {} to {}".format(base_name, place_name_a, place_name_b)
+    route_b_to_a_name = "{} {} to {}".format(base_name, place_name_b, place_name_a)
 
-    if plot_route:
-        map_plotter = MapPlotter()
-        map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
-        map_plotter.plot_multi_line_string(route_a_to_b_name, route_a_to_b)
-        map_plotter.plot_multi_line_string(route_b_to_a_name, route_b_to_a)
-        map_plotter.plot_waypoints("Waypoints", original_waypoints)
-        map_plotter.show(ways_multi_line_string.centroid)
+    if show_plot:
+        plot_routes(
+            route_features,
+            [(route_a_to_b_name, route_a_to_b), (route_b_to_a_name, route_b_to_a)],
+        )
 
+    logger.info("export gpx files for both directions")
     export_gpx_route(route_a_to_b, route_a_to_b_name)
     export_gpx_route(route_b_to_a, route_b_to_a_name)
+    logger.info("route creation complete")
 
 
 def get_csv_data(filename):
@@ -243,5 +244,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    create_route("Great Britain", "ncn", 22)
+    create_route("France", "ncn", "V43")
     # main()

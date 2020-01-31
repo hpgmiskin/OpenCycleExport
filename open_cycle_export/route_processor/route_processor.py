@@ -61,7 +61,7 @@ def process_route_features(
     return waypoints, waypoint_distances, waypoint_connections, costs_matrix
 
 
-def find_furthest_waypoints(waypoint_distances: Matrix):
+def find_furthest_waypoints(waypoint_distances: Matrix) -> Tuple[int, int]:
     waypoint_distances = numpy.array(waypoint_distances)
     max_flat_index = numpy.argmax(waypoint_distances)
     return numpy.unravel_index(max_flat_index, waypoint_distances.shape)
