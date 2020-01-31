@@ -39,9 +39,9 @@ def get_cache_path(query_hash):
     return os.path.join(cache_folder, "{}.json".format(query_hash))
 
 
-def query_overpass(query, verbosity="body"):
+def query_overpass(query, verbosity="body", responseformat="geojson"):
     minified_query = minify_query(query)
-    query_hash = hash_string(minified_query + verbosity)
+    query_hash = hash_string(minified_query + verbosity + responseformat)
     cache_path = get_cache_path(query_hash)
     try:
         data = json.load(open(cache_path))
@@ -49,6 +49,7 @@ def query_overpass(query, verbosity="body"):
         return data
     except:
         logger.info("query overpass")
-        data = api.get(minified_query, verbosity=verbosity)
+        kwargs = dict(verbosity=verbosity, responseformat=responseformat)
+        data = api.get(minified_query, **kwargs)
         json.dump(data, open(cache_path, "w"))
         return data
