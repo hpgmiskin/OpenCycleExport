@@ -14,13 +14,19 @@ from shapely.geometry import Point, LineString, MultiLineString, Polygon
 from shapely.geometry.base import BaseGeometry
 
 from open_cycle_export.map_builder.map_plotter import MapPlotter
+
 from open_cycle_export.route_downloader.download_cycle_route import download_cycle_route
 from open_cycle_export.route_downloader.download_places import download_places
+
+from open_cycle_export.route_exporter.elevation_finder import find_elevations
+from open_cycle_export.route_exporter.route_exporter import generate_gpx_file
+
 from open_cycle_export.route_processor.route_processor import (
     process_route_features,
     find_furthest_waypoints,
     make_route_creator,
 )
+
 from open_cycle_export.shapely_utilities.immutable_point import ImmutablePoint
 from open_cycle_export.shapely_utilities.geometry_encoder import GeometryEncoder
 
@@ -29,13 +35,27 @@ logger = logging.getLogger(__name__)
 get_geometry = operator.itemgetter("geometry")
 
 
-def get_file_path(name: str, extension: str = "json"):
+def format_name(name: str, substitute=""):
+    return re.sub(r"\s+", substitute, name).lower()
+
+
+def get_file_path(name: str, folder: str, extension: str = "json"):
     filename = "{}.{}".format(name, extension)
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), ".cache", filename)
+    return os.path.join(os.path.abspath(os.path.dirname(__file__)), folder, filename)
+
+
+def export_gpx_route(route: MultiLineString, filename: str):
+    filename = format_name(filename, "_")
+    file_path = get_file_path(filename, "routes", "gpx")
+    coordinates = [coord for line in route for coord in line.coords]
+    elevations = find_elevations(coordinates)
+    gpx_data = generate_gpx_file(coordinates, elevations)
+    with open(file_path, "w") as open_file:
+        open_file.write(gpx_data)
 
 
 def store_json(data: Any, filename: str, **kwargs):
-    file_path = get_file_path(filename)
+    file_path = get_file_path(filename, ".cache")
     with open(file_path, "w") as open_file:
         json.dump(data, open_file, **kwargs)
 
@@ -50,7 +70,7 @@ def store_geometry(geometry_data: Any, filename: str):
 
 
 def load_json(filename: str):
-    file_path = get_file_path(filename)
+    file_path = get_file_path(filename, ".cache")
     with open(file_path) as open_file:
         return json.load(open_file)
 
@@ -105,10 +125,6 @@ def merge_line_strings(line_strings: List[LineString]):
     return MultiLineString([ways_multi_line_string])
 
 
-def format_name(name: str):
-    return re.sub(r"\s+", "", name).lower()
-
-
 def closest_place_index_finder(place_points: List[ImmutablePoint]):
     place_indexes = list(range(len(place_points)))
 
@@ -155,7 +171,7 @@ def process_route_data(area, route_type, route_number):
     )
 
 
-def create_route(area, route_type, route_number):
+def create_route(area, route_type, route_number, plot_route=False):
 
     process_route_data_results = process_route_data(area, route_type, route_number)
     route_features, *route_creator_inputs = process_route_data_results
@@ -198,12 +214,16 @@ def create_route(area, route_type, route_number):
     route_a_to_b_name = "{} to {}".format(waypoint_a_place_name, waypoint_b_place_name)
     route_b_to_a_name = "{} to {}".format(waypoint_b_place_name, waypoint_a_place_name)
 
-    map_plotter = MapPlotter()
-    map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
-    map_plotter.plot_multi_line_string(route_a_to_b_name, route_a_to_b)
-    map_plotter.plot_multi_line_string(route_b_to_a_name, route_b_to_a)
-    map_plotter.plot_waypoints("Waypoints", original_waypoints)
-    map_plotter.show(ways_multi_line_string.centroid)
+    if plot_route:
+        map_plotter = MapPlotter()
+        map_plotter.plot_multi_line_string("Ways", ways_multi_line_string)
+        map_plotter.plot_multi_line_string(route_a_to_b_name, route_a_to_b)
+        map_plotter.plot_multi_line_string(route_b_to_a_name, route_b_to_a)
+        map_plotter.plot_waypoints("Waypoints", original_waypoints)
+        map_plotter.show(ways_multi_line_string.centroid)
+
+    export_gpx_route(route_a_to_b, route_a_to_b_name)
+    export_gpx_route(route_b_to_a, route_b_to_a_name)
 
 
 def get_csv_data(filename):
@@ -223,5 +243,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    # create_route("Great Britain", "ncn", 22)
-    main()
+    create_route("Great Britain", "ncn", 22)
+    # main()
